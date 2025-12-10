@@ -58,6 +58,16 @@ export async function getRadarrUpcoming() {
                 (img: any) => img.coverType === 'fanart'
               )?.remoteUrl || null;
 
+            // Determine availability type
+            let availabilityType = '';
+            if (item.inCinemas) {
+              availabilityType = 'Cinema';
+            } else if (item.digitalRelease) {
+              availabilityType = 'Digital';
+            } else if (item.physicalRelease) {
+              availabilityType = 'Physical';
+            }
+
             return {
               title: item.title,
               start:
@@ -66,6 +76,7 @@ export async function getRadarrUpcoming() {
                 item.physicalRelease ||
                 item.releaseDate,
               status: item.hasFile ? 'Available' : 'Pending',
+              downloadStatus: item.grabbed ? 'Downloading' : (item.hasFile ? 'Available' : 'Pending'),
               description: item.overview,
               type: 'movie',
               tmdbId: item.tmdbId,
@@ -74,6 +85,7 @@ export async function getRadarrUpcoming() {
               runtime: item.runtime,
               genres: item.genres,
               fanart,
+              availabilityType,
             };
           });
       } catch (err: any) {

@@ -156,24 +156,33 @@ useEffect(() => {
   initialView={calendarView}
   locale="en-au"
   firstDay={1}
+  /* Default title format (Month day year) */
+  titleFormat={{ month: 'long', day: 'numeric', year: 'numeric' }}
   views={{
     dayGridMonth: {
       dayHeaderFormat: { weekday: 'short' },
+      // Month day year for consistency (e.g. "December 9 2025")
+      titleFormat: { month: 'long', day: 'numeric', year: 'numeric' },
     },
-    timeGridWeek: {
+    // Use the dayGrid week view so the left-side time gutter is not shown
+    dayGridWeek: {
+      // Show numeric month/day/year in week headers (MM/DD/YYYY)
       dayHeaderFormat: {
-        weekday: 'short',
-        day: '2-digit',
         month: '2-digit',
-        omitCommas: true,
+        day: '2-digit',
+        year: 'numeric',
       },
+      // Month day year for week title
+      titleFormat: { month: 'long', day: 'numeric', year: 'numeric' },
     },
     dayGridDay: {
       dayHeaderFormat: {
         weekday: 'long',
+        // show Month/day in header
+        month: 'short',
         day: '2-digit',
-        month: '2-digit',
       },
+      titleFormat: { month: 'long', day: 'numeric', year: 'numeric' },
     },
   }}
   headerToolbar={{
@@ -242,47 +251,111 @@ useEffect(() => {
           const event = arg.event.extendedProps;
           const container = document.createElement('div');
           container.className = 'fc-event-custom';
+          container.setAttribute('role', 'button');
+          container.tabIndex = 0;
 
           const titleLine = document.createElement('div');
           titleLine.className = 'fc-event-title';
           const dot =
             event.type === 'tv'
-              ? '<span class="media-dot tv-dot"></span>'
+              ? '<span class="media-dot tv-dot" aria-hidden="true"></span>'
               : event.type === 'movie'
-              ? '<span class="media-dot movie-dot"></span>'
+              ? '<span class="media-dot movie-dot" aria-hidden="true"></span>'
               : '';
-          titleLine.innerHTML = `${dot}${event.title || arg.event.title || ''}`;
+          // Prefer displayTitle then title
+          titleLine.innerHTML = `${dot}<span class="fc-event-title-text">${event.displayTitle || event.title || arg.event.title || ''}</span>`;
 
           const subLine = document.createElement('div');
-          let subText = '';
+          subLine.className = 'fc-event-sub';
+
+          // Availability and metadata
+          let metaParts: string[] = [];
+          let availabilityBadge = '';
           let isAvailable = false;
 
           if (event.episodes && Array.isArray(event.episodes)) {
             const codes = event.episodes.map((e: any) => e.episodeCode).filter(Boolean);
-            subText =
-              codes.length === 1
-                ? codes[0]
-                : `${codes[0].slice(0, 3)}${codes[0].slice(3)}–${codes[codes.length - 1].slice(3)}`;
+            const epText = codes.length === 1 ? codes[0] : `${codes[0]}–${codes[codes.length - 1]}`;
+            metaParts.push(epText);
             isAvailable = event.episodes[0].status === 'Available';
           } else if (event.episodeCode) {
-            subText = event.episodeCode;
+            metaParts.push(event.episodeCode);
             isAvailable = event.status === 'Available';
-          } else if (event.type === 'movie') {
-            isAvailable = event.status === 'Available';
-            const cert = event.certification || '';
-            const runtime = event.runtime ? `${event.runtime} minutes` : '';
-            subText = [cert, runtime].filter(Boolean).join(' | ');
           }
 
-          subLine.innerHTML = `${subText} ${
-            isAvailable ? '<span class="tick-icon">✅</span>' : ''
-          }`;
-          subLine.className = 'fc-event-sub';
+          if (event.type === 'movie') {
+            isAvailable = event.status === 'Available';
+            const cert = event.certification || '';
+            const runtime = event.runtime ? `${event.runtime}m` : '';
+            if (event.availabilityType) {
+              const at = (event.availabilityType || '').toString().toLowerCase();
+              if (at.includes('digital')) availabilityBadge = '<span class="availability-badge avail-digital">Digital</span>';
+              else if (at.includes('cinema') || at.includes('theatre') || at.includes('theater')) availabilityBadge = '<span class="availability-badge avail-cinema">Cinema</span>';
+              else if (at.includes('physical')) availabilityBadge = '<span class="availability-badge avail-physical">Physical</span>';
+            }
+            if (cert) metaParts.push(cert);
+            if (runtime) metaParts.push(runtime);
+          }
 
-          container.appendChild(titleLine);
-          container.appendChild(subLine);
+          // Format time for TV shows (12-hour clock, AM/PM)
+          let timeText = '';
+          if (event.type === 'tv' && arg.event.startStr) {
+            const startDate = new Date(arg.event.startStr);
+            const hrs = startDate.getHours();
+            const minutes = startDate.getMinutes().toString().padStart(2, '0');
+            const period = hrs >= 12 ? 'PM' : 'AM';
+            const hours12 = hrs % 12 === 0 ? 12 : hrs % 12;
+            timeText = `${hours12}:${minutes} ${period}`;
+            metaParts.push(timeText);
+          }
 
+          // Determine download status (supports grouped episodes and single items)
+          let downloadStatus = '';
+          if (event.episodes && Array.isArray(event.episodes) && event.episodes.length > 0) {
+            downloadStatus = event.episodes[0].status || '';
+          } else {
+            downloadStatus = event.status || '';
+          }
 
+          let statusLabel = '';
+          let statusClass = '';
+          if (downloadStatus) {
+            const ds = downloadStatus.toString().toLowerCase();
+            if (ds === 'available') {
+              statusLabel = 'Available';
+              statusClass = 'available';
+            } else if (ds === 'requested') {
+              statusLabel = 'Requested';
+              statusClass = 'requested';
+            } else if (ds === 'pending') {
+              statusLabel = 'Pending';
+              statusClass = 'pending';
+            } else if (ds.includes('download') || ds.includes('inprogress') || ds.includes('downloading')) {
+              statusLabel = 'Downloading';
+              statusClass = 'downloading';
+            } else {
+              statusLabel = downloadStatus;
+              statusClass = 'unknown';
+            }
+          }
+
+          const statusBadge = statusLabel ? `<span class="download-badge download-${statusClass}">${statusLabel}</span>` : '';
+
+          const metaHtml = `${metaParts.join(' | ')} ${statusBadge} ${availabilityBadge}`;
+          subLine.innerHTML = metaHtml.trim();
+
+          // Add episode title line for TV shows
+          if (event.type === 'tv' && event.episodeTitle) {
+            const epTitleLine = document.createElement('div');
+            epTitleLine.className = 'fc-event-episode-title';
+            epTitleLine.innerHTML = event.episodeTitle;
+            container.appendChild(titleLine);
+            container.appendChild(subLine);
+            container.appendChild(epTitleLine);
+          } else {
+            container.appendChild(titleLine);
+            container.appendChild(subLine);
+          }
 
           return { domNodes: [container] };
         }}
@@ -297,7 +370,13 @@ useEffect(() => {
           <span className="media-dot movie-dot"></span> Movie
         </div>
         <div className="legend-item">
-          <span className="tick-icon">✅</span> Available
+          <span className="download-badge download-requested">Requested</span> Requested
+        </div>
+        <div className="legend-item">
+          <span className="download-badge download-pending">Pending</span> Pending
+        </div>
+        <div className="legend-item">
+          <span className="download-badge download-downloading">Downloading</span> Downloading
         </div>
       </div>
 
@@ -372,22 +451,32 @@ useEffect(() => {
   <div className="popup-status-badge">
     {Array.isArray(selectedEvent.episodes) && selectedEvent.episodes.length > 0 ? (
       (() => {
-        const allAvailable = selectedEvent.episodes.every((ep: any) => ep.status === 'Available');
-        const anyRequested = selectedEvent.episodes.some((ep: any) => ep.status === 'Requested');
+        const statuses = selectedEvent.episodes.map((ep: any) => (ep.status || '').toString().toLowerCase());
+        const allAvailable = statuses.every((s: string) => s === 'available');
+        const anyDownloading = statuses.some((s: string) => s.includes('download') || s.includes('inprogress') || s.includes('downloading'));
+        const anyPending = statuses.some((s: string) => s === 'pending');
+        const anyRequested = statuses.some((s: string) => s === 'requested');
 
         if (allAvailable) {
           return <span className="badge badge-available">Available</span>;
+        } else if (anyDownloading) {
+          return <span className="badge badge-downloading">Downloading</span>;
+        } else if (anyPending) {
+          return <span className="badge badge-pending">Pending</span>;
         } else if (anyRequested) {
           return <span className="badge badge-requested">Requested</span>;
         } else {
-          return null;
+          return <span className="badge badge-unknown">{selectedEvent.episodes[0]?.status || 'Unknown'}</span>;
         }
       })()
-    ) : selectedEvent.status === 'Available' ? (
-      <span className="badge badge-available">Available</span>
-    ) : (
-      <span className="badge badge-requested">Requested</span>
-    )}
+    ) : (() => {
+      const s = (selectedEvent.status || '').toString().toLowerCase();
+      if (s === 'available') return <span className="badge badge-available">Available</span>;
+      if (s.includes('download') || s.includes('inprogress') || s.includes('downloading')) return <span className="badge badge-downloading">Downloading</span>;
+      if (s === 'pending') return <span className="badge badge-pending">Pending</span>;
+      if (s === 'requested') return <span className="badge badge-requested">Requested</span>;
+      return <span className="badge badge-unknown">{selectedEvent.status || 'Unknown'}</span>;
+    })()}
   </div>
 
                 <div className="popup-actions">
@@ -607,6 +696,103 @@ useEffect(() => {
     background-color: #6366f1;
   }
 
+  .badge-downloading {
+    background-color: #06b6d4;
+  }
+
+  .badge-pending {
+    background-color: #f59e0b;
+  }
+
+  .badge-unknown {
+    background-color: #9ca3af;
+  }
+
+  /* Availability badges inside events */
+  .availability-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 0.4rem;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .avail-digital { background: #06b6d4; } /* cyan */
+  .avail-cinema { background: #f59e0b; } /* amber */
+  .avail-physical { background: #8b5cf6; } /* violet */
+
+  /* Download status badges used inside events */
+  .download-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 0.4rem;
+    display: inline-block;
+    vertical-align: middle;
+    color: #fff;
+  }
+  .download-available { background: #22c55e; } /* green */
+  .download-requested { background: #6366f1; } /* indigo */
+  .download-pending { background: #f59e0b; } /* amber */
+  .download-downloading { background: #06b6d4; } /* cyan */
+  .download-unknown { background: #9ca3af; } /* gray */
+
+  /* Event layout tweaks */
+  .fc-event-custom {
+    white-space: normal;
+    line-height: 1.1;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+  }
+  .fc-event-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .fc-event-title-text { vertical-align: middle; }
+  .fc-event-sub {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .fc-event-episode-title {
+    font-size: 0.85rem;
+    color: #a0aec0;
+    font-style: italic;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+  .tick-icon { margin-left: 0.25rem; }
+
+  /* Popup readability */
+  .popup-content {
+    max-height: 80vh;
+    overflow: auto;
+    background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(17,24,39,0.95));
+    padding: 1.25rem;
+  }
+  .popup-background { filter: blur(2px) brightness(0.5); }
+  .popup-foreground { background: transparent; }
+
+  /* Legend badges alignment */
+  .calendar-legend .legend-item { gap: 0.6rem; }
+
   .calendar-link {
     display: inline-block;
     background-color: #3949ab;
@@ -706,14 +892,16 @@ useEffect(() => {
     font-weight: bold;
   }
 
+  /* Highlight today's cell with a subtle lighter shade and rounded badge */
   .fc-day-today {
-    background-color: inherit !important;
+    background-color: rgba(255,255,255,0.03) !important;
+    border-radius: 0.5rem;
   }
 
   .fc-day-today .fc-daygrid-day-number {
-    background-color: #3949ab;
-    padding: 4px 6px;
-    border-radius: 6px;
+    background-color: #5c6bc0; /* lighter accent than before */
+    padding: 5px 7px;
+    border-radius: 8px;
     color: #fff !important;
   }
 

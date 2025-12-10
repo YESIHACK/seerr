@@ -17,6 +17,8 @@ type Event = {
   fanart?: string;
   year?: number;
   seriesOverview?: string;
+  seriesStatus?: string;
+  downloadStatus?: string;
 };
 
 function groupTvEpisodes(episodes: Event[]): Event[] {
@@ -61,6 +63,7 @@ function groupTvEpisodes(episodes: Event[]): Event[] {
       tmdbId: first.tmdbId,
       fanart: first.fanart,
       year: first.year,
+      seriesStatus: first.seriesStatus,
       seriesOverview: first.seriesOverview,
       episodeCode,
       episodes: group.map((e) => ({

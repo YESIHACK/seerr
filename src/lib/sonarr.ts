@@ -57,6 +57,7 @@ return {
   tmdbId: series?.tmdbId || null, // ✅ fixed line
   fanart: series?.images?.find((img: any) => img.coverType === 'fanart')?.remoteUrl,
   seriesId: series?.id,
+  seriesStatus: series?.status || '', // 'continuing', 'ended', 'upcoming', or 'deleted'
   seriesOverview: series?.overview || '',
   description: episode.overview || '',
 };
