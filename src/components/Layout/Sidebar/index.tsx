@@ -366,6 +366,7 @@ const Sidebar = ({
                   );
                 })}
               </nav>
+
               <div className="px-2">
                 <UserWarnings />
               </div>
@@ -373,7 +374,7 @@ const Sidebar = ({
                 <div className="px-2">
                   <VersionStatus />
                 </div>
-              )} */}
+              )}
             </div>
           </div>
         </div>
