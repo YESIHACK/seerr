@@ -1,4 +1,5 @@
 import Badge from '@app/components/Common/Badge';
+import UserWarnings from '@app/components/Layout/UserWarnings';
 import VersionStatus from '@app/components/Layout/VersionStatus';
 import useClickOutside from '@app/hooks/useClickOutside';
 import { Permission, useUser } from '@app/hooks/useUser';
@@ -14,6 +15,7 @@ import {
   TvIcon,
   UsersIcon,
   XMarkIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -26,6 +28,7 @@ export const menuMessages = defineMessages('components.Layout.Sidebar', {
   browsemovies: 'Movies',
   browsetv: 'Series',
   requests: 'Requests',
+  calendar: 'Calendar',
   blocklist: 'Blocklist',
   issues: 'Issues',
   users: 'Users',
@@ -76,6 +79,13 @@ const SidebarLinks: SidebarLinkProps[] = [
     messagesKey: 'requests',
     svgIcon: <ClockIcon className="mr-3 h-6 w-6" />,
     activeRegExp: /^\/requests/,
+  },
+  {
+    href: '/calendar',
+    messagesKey: 'calendar',
+    svgIcon: <CalendarDaysIcon className="mr-3 h-6 w-6" />,
+    activeRegExp: /^\/calendar/,
+    dataTestId: 'sidebar-menu-calendar',
   },
   {
     href: '/blocklist',
@@ -136,7 +146,6 @@ const Sidebar = ({
     if (openIssuesCount) {
       revalidateIssueCount();
     }
-
     if (pendingRequestsCount) {
       revalidateRequestsCount();
     }
@@ -149,6 +158,7 @@ const Sidebar = ({
 
   return (
     <>
+      {/* Mobile sidebar */}
       <div className="lg:hidden">
         <Transition as={Fragment} show={open}>
           <div className="fixed inset-0 z-40 flex">
@@ -189,13 +199,32 @@ const Sidebar = ({
                     ref={navRef}
                     className="flex flex-1 flex-col overflow-y-auto pb-8 pt-4 sm:pb-4"
                   >
-                    <div className="flex flex-shrink-0 items-center px-2">
-                      <span className="w-full px-4 text-xl text-gray-50">
-                        <Link href="/" className="relative block h-24 w-64">
-                          <Image src="/logo_full.svg" alt="Logo" fill />
-                        </Link>
-                      </span>
+                    {/* Mobile logo */}
+                    <div className="flex items-center justify-center px-4 py-6">
+                      <Link href="/" className="block relative h-12 w-48">
+                        {/* Light theme */}
+                        <span className="block dark:hidden relative h-12 w-48">
+                          <Image
+                            src="/logo_full.svg"
+                            alt="Jellyseerr"
+                            fill
+                            className="object-contain"
+                            priority
+                          />
+                        </span>
+                        {/* Dark theme */}
+                        <span className="hidden dark:block relative h-12 w-48">
+                          <Image
+                            src="/logo_full.svg"
+                            alt="Jellyseerr"
+                            fill
+                            className="object-contain"
+                            priority
+                          />
+                        </span>
+                      </Link>
                     </div>
+
                     <nav className="mt-10 flex-1 space-y-4 px-4">
                       {SidebarLinks.filter((link) =>
                         link.requiredPermission
@@ -211,9 +240,7 @@ const Sidebar = ({
                             as={sidebarLink.as}
                             onClick={() => setClosed()}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                setClosed();
-                              }
+                              if (e.key === 'Enter') setClosed();
                             }}
                             role="button"
                             tabIndex={0}
@@ -232,6 +259,10 @@ const Sidebar = ({
                         );
                       })}
                     </nav>
+                    <div className="px-2">
+                      <UserWarnings onClick={() => setClosed()} />
+                    </div>
+
                     {hasPermission(Permission.ADMIN) && (
                       <div className="px-2">
                         <VersionStatus onClick={() => setClosed()} />
@@ -239,27 +270,45 @@ const Sidebar = ({
                     )}
                   </div>
                 </div>
-                <div className="w-14 flex-shrink-0">
-                  {/* <!-- Force sidebar to shrink to fit close icon --> */}
-                </div>
+                <div className="w-14 flex-shrink-0" />
               </>
             </Transition.Child>
           </div>
         </Transition>
       </div>
 
+      {/* Desktop sidebar */}
       <div className="fixed bottom-0 left-0 top-0 z-30 hidden lg:flex lg:flex-shrink-0">
         <div className="sidebar flex w-64 flex-col">
           <div className="flex h-0 flex-1 flex-col">
             <div className="flex flex-1 flex-col overflow-y-auto pb-4">
-              <div className="flex flex-shrink-0 items-center">
-                <span className="w-full px-4 py-2 text-2xl text-gray-50">
-                  <Link href="/" className="relative block h-24">
-                    <Image src="/logo_full.svg" alt="Logo" fill />
-                  </Link>
-                </span>
+              {/* Desktop logo */}
+              <div className="flex flex-shrink-0 items-center justify-center px-4 py-4">
+                <Link href="/" className="relative block h-24 w-72">
+                  {/* Light theme */}
+                  <span className="block dark:hidden relative h-24 w-72">
+                    <Image
+                      src="/logo_stacked.svg"
+                      alt="Jellyseerr"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </span>
+                  {/* Dark theme */}
+                  <span className="hidden dark:block relative h-24 w-72">
+                    <Image
+                      src="/logo_stacked.svg"
+                      alt="Jellyseerr"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </span>
+                </Link>
               </div>
-              <nav className="mt-8 flex-1 space-y-4 px-4">
+
+              <nav className="mt-4 flex-1 space-y-4 px-4">
                 {SidebarLinks.filter((link) =>
                   link.requiredPermission
                     ? hasPermission(link.requiredPermission, {
@@ -317,11 +366,14 @@ const Sidebar = ({
                   );
                 })}
               </nav>
+              <div className="px-2">
+                <UserWarnings />
+              </div>
               {hasPermission(Permission.ADMIN) && (
                 <div className="px-2">
                   <VersionStatus />
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
