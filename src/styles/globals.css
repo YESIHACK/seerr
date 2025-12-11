@@ -586,3 +586,80 @@
 .ptr--box {
   margin-bottom: -13px !important;
 }
+
+/* FullCalendar Dark Theme Overrides */
+.fc-theme-standard .fc-scrollgrid {
+  border-color: #374151; /* gray-700 */
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: #374151; /* gray-700 */
+}
+
+.fc .fc-toolbar-title {
+  color: #f3f4f6; /* gray-100 */
+}
+
+.fc .fc-button-primary {
+  background-color: #374151; /* gray-700 */
+  border-color: #4b5563; /* gray-600 */
+  color: #f3f4f6; /* gray-100 */
+}
+
+.fc .fc-button-primary:hover {
+  background-color: #4b5563; /* gray-600 */
+  border-color: #6b7280; /* gray-500 */
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background-color: #4f46e5; /* indigo-600 */
+  border-color: #4f46e5; /* indigo-600 */
+}
+
+.fc .fc-button-primary:disabled {
+  background-color: #1f2937; /* gray-800 */
+  border-color: #374151; /* gray-700 */
+  color: #6b7280; /* gray-500 */
+}
+
+.fc-daygrid-day-number {
+  color: #d1d5db; /* gray-300 */
+  text-decoration: none;
+}
+
+.fc-col-header-cell-cushion {
+  color: #e5e7eb; /* gray-200 */
+  text-decoration: none;
+}
+
+.fc .fc-list-sticky .fc-list-day > * {
+  background: #1f2937; /* gray-800 */
+}
+
+.fc .fc-list-event:hover td {
+  background-color: #374151; /* gray-700 */
+}
+
+.fc-theme-standard .fc-list {
+  border-color: #374151; /* gray-700 */
+}
+
+.fc-timegrid-slot-label-cushion {
+  color: #9ca3af; /* gray-400 */
+}
+
+.fc-timegrid-axis-cushion {
+  color: #9ca3af; /* gray-400 */
+}
+
+/* Today highlight */
+.fc .fc-day-today {
+  background-color: rgba(
+    79,
+    70,
+    229,
+    0.1
+  ) !important; /* indigo-600 with opacity */
+}
