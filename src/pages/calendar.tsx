@@ -1,12 +1,14 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { LanguageContext } from '../context/LanguageContext';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import Head from 'next/head';
 import timeGridPlugin from '@fullcalendar/timegrid';
 
 export default function CalendarPage() {
-const calendarRef = useRef<any>(null); // or more properly: RefObject<FullCalendar>
+  const { locale } = useContext(LanguageContext);
+  const calendarRef = useRef<any>(null); // or more properly: RefObject<FullCalendar>
 
   const [calendarView, setCalendarView] = useState('dayGridMonth');
   const [events, setEvents] = useState<any[]>([]);
@@ -154,7 +156,7 @@ useEffect(() => {
   ref={calendarRef}
   plugins={[dayGridPlugin, timeGridPlugin]}
   initialView={calendarView}
-  locale="en-au"
+  locale={locale}
   firstDay={1}
   /* Default title format (Month day year) */
   titleFormat={{ month: 'long', day: 'numeric', year: 'numeric' }}
