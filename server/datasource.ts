@@ -1,4 +1,6 @@
 import fs from 'fs';
+import path from 'path';
+import 'reflect-metadata';
 import type { TlsOptions } from 'tls';
 import type { DataSourceOptions, EntityTarget, Repository } from 'typeorm';
 import { DataSource } from 'typeorm';
@@ -58,9 +60,9 @@ const devConfig: DataSourceOptions = {
   migrationsRun: false,
   logging: boolFromEnv('DB_LOG_QUERIES'),
   enableWAL: true,
-  entities: ['server/entity/**/*.ts'],
-  migrations: ['server/migration/sqlite/**/*.ts'],
-  subscribers: ['server/subscriber/**/*.ts'],
+  entities: [path.join(__dirname, 'entity/**/*.ts')],
+  migrations: [path.join(__dirname, 'migration/sqlite/**/*.ts')],
+  subscribers: [path.join(__dirname, 'subscriber/**/*.ts')],
 };
 
 const prodConfig: DataSourceOptions = {

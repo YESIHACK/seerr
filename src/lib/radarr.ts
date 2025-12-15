@@ -24,7 +24,9 @@ export async function getRadarrUpcoming() {
     activeInstances.map(async (instance: any) => {
       const scheme = instance.useSsl ? 'https' : 'http';
       const baseUrl = instance.baseUrl || '';
-      const calendarUrl = `${scheme}://${instance.hostname}:${instance.port}${baseUrl}/api/v3/calendar?start=${start.toISOString()}&end=${end.toISOString()}`;
+      const calendarUrl = `${scheme}://${instance.hostname}:${
+        instance.port
+      }${baseUrl}/api/v3/calendar?start=${start.toISOString()}&end=${end.toISOString()}`;
       const movieUrl = `${scheme}://${instance.hostname}:${instance.port}${baseUrl}/api/v3/movie`;
 
       try {
@@ -51,45 +53,88 @@ export async function getRadarrUpcoming() {
                 item?.physicalRelease ||
                 item?.releaseDate)
           )
-          .map((item: any) => {
+          .flatMap((item: any) => {
             const movieDetails = movieDetailsById[item.id] || {};
             const fanart =
               movieDetails.images?.find(
                 (img: any) => img.coverType === 'fanart'
               )?.remoteUrl || null;
 
-            // Determine availability type
-            let availabilityType = '';
+            const events: any[] = [];
+
             if (item.inCinemas) {
-              availabilityType = 'Cinema';
-            } else if (item.digitalRelease) {
-              availabilityType = 'Digital';
-            } else if (item.physicalRelease) {
-              availabilityType = 'Physical';
+              events.push({
+                title: item.title,
+                start: item.inCinemas,
+                status: item.hasFile ? 'Available' : 'Pending',
+                downloadStatus: item.grabbed
+                  ? 'Downloading'
+                  : item.hasFile
+                  ? 'Available'
+                  : 'Pending',
+                description: item.overview,
+                type: 'movie',
+                tmdbId: item.tmdbId,
+                year: item.year,
+                certification: item.certification,
+                runtime: item.runtime,
+                genres: item.genres,
+                fanart,
+                availabilityType: 'Cinema',
+              });
             }
 
-            return {
-              title: item.title,
-              start:
-                item.inCinemas ||
-                item.digitalRelease ||
-                item.physicalRelease ||
-                item.releaseDate,
-              status: item.hasFile ? 'Available' : 'Pending',
-              downloadStatus: item.grabbed ? 'Downloading' : (item.hasFile ? 'Available' : 'Pending'),
-              description: item.overview,
-              type: 'movie',
-              tmdbId: item.tmdbId,
-              year: item.year,
-              certification: item.certification,
-              runtime: item.runtime,
-              genres: item.genres,
-              fanart,
-              availabilityType,
-            };
+            if (item.digitalRelease) {
+              events.push({
+                title: item.title,
+                start: item.digitalRelease,
+                status: item.hasFile ? 'Available' : 'Pending',
+                downloadStatus: item.grabbed
+                  ? 'Downloading'
+                  : item.hasFile
+                  ? 'Available'
+                  : 'Pending',
+                description: item.overview,
+                type: 'movie',
+                tmdbId: item.tmdbId,
+                year: item.year,
+                certification: item.certification,
+                runtime: item.runtime,
+                genres: item.genres,
+                fanart,
+                availabilityType: 'Digital',
+              });
+            }
+
+            if (item.physicalRelease) {
+              events.push({
+                title: item.title,
+                start: item.physicalRelease,
+                status: item.hasFile ? 'Available' : 'Pending',
+                downloadStatus: item.grabbed
+                  ? 'Downloading'
+                  : item.hasFile
+                  ? 'Available'
+                  : 'Pending',
+                description: item.overview,
+                type: 'movie',
+                tmdbId: item.tmdbId,
+                year: item.year,
+                certification: item.certification,
+                runtime: item.runtime,
+                genres: item.genres,
+                fanart,
+                availabilityType: 'Physical',
+              });
+            }
+
+            return events;
           });
       } catch (err: any) {
-        console.error(`❌ Radarr (${instance.hostname}) fetch failed:`, err.message);
+        console.error(
+          `❌ Radarr (${instance.hostname}) fetch failed:`,
+          err.message
+        );
         return [];
       }
     })

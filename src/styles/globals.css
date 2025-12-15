@@ -663,3 +663,24 @@
     0.1
   ) !important; /* indigo-600 with opacity */
 }
+
+.availability-badge {
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: white;
+  margin-right: 0.5rem;
+}
+
+.avail-cinema {
+  background-color: #ef4444;
+}
+
+.avail-digital {
+  background-color: #3b82f6;
+}
+
+.avail-physical {
+  background-color: #10b981;
+}

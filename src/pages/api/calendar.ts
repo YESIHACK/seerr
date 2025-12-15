@@ -1,8 +1,6 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { getSonarrUpcoming } from '@app/lib/sonarr';
 import { getRadarrUpcoming } from '@app/lib/radarr';
-
-
+import { getSonarrUpcoming } from '@app/lib/sonarr';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 type Event = {
   title: string;
@@ -51,7 +49,8 @@ function groupTvEpisodes(episodes: Event[]): Event[] {
       const s2 = matchLast[1].padStart(2, '0');
       const e2 = matchLast[2].padStart(2, '0');
 
-      episodeCode = s1 === s2 ? `S${s1}E${e1}–E${e2}` : `S${s1}E${e1}–S${s2}E${e2}`;
+      episodeCode =
+        s1 === s2 ? `S${s1}E${e1}–E${e2}` : `S${s1}E${e1}–S${s2}E${e2}`;
     }
 
     return {
@@ -76,7 +75,10 @@ function groupTvEpisodes(episodes: Event[]): Event[] {
   });
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
     console.log('[calendar API] Fetching Sonarr...');
     const sonarrData = await getSonarrUpcoming();
@@ -97,6 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const events = [...groupedTv, ...radarrData];
     console.log(`[calendar API] Final events length: ${events.length}`);
+
     res.status(200).json(events);
   } catch (error: any) {
     console.error('[calendar API] Failed to load:', error.message || error);
