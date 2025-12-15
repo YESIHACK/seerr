@@ -69,33 +69,6 @@ export default function CalendarPage() {
   }, []);
 
   useEffect(() => {
-    const filterWrapper = document.querySelector('.fc-customFilter-button');
-    if (filterWrapper) {
-      const existing = filterWrapper.querySelector('select');
-      if (existing) return;
-
-      const dropdown = document.createElement('select');
-      dropdown.className = 'calendar-filter';
-      dropdown.innerHTML = `
-        <option value="all">All</option>
-        <option value="tv">TV Only</option>
-        <option value="movie">Movies Only</option>
-      `;
-      dropdown.value = filter;
-      dropdown.onchange = (e) => {
-        const val = (e.target as HTMLSelectElement).value as
-          | 'all'
-          | 'tv'
-          | 'movie';
-        setFilter(val);
-      };
-
-      filterWrapper.innerHTML = '';
-      filterWrapper.appendChild(dropdown);
-    }
-  }, [filter]);
-
-  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         popupRef.current &&
@@ -409,10 +382,34 @@ export default function CalendarPage() {
 
         {/* ✅ LEGEND GOES HERE */}
         <div className="calendar-legend">
-          <div className="legend-item">
+          <div
+            className={`legend-item interactable ${
+              filter !== 'all' && filter !== 'tv' ? 'opacity-50' : ''
+            }`}
+            onClick={() => setFilter(filter === 'tv' ? 'all' : 'tv')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setFilter(filter === 'tv' ? 'all' : 'tv');
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
             <span className="media-dot tv-dot"></span> TV Show
           </div>
-          <div className="legend-item">
+          <div
+            className={`legend-item interactable ${
+              filter !== 'all' && filter !== 'movie' ? 'opacity-50' : ''
+            }`}
+            onClick={() => setFilter(filter === 'movie' ? 'all' : 'movie')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setFilter(filter === 'movie' ? 'all' : 'movie');
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
             <span className="media-dot movie-dot"></span> Movie
           </div>
           <div className="legend-item">
@@ -794,6 +791,13 @@ export default function CalendarPage() {
           border-radius: 6px;
           font-weight: 500;
           cursor: pointer;
+        }
+        .legend-item.interactable {
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .legend-item.opacity-50 {
+          opacity: 0.5;
         }
 
         .popup-close-btn:hover {

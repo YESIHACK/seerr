@@ -6,6 +6,7 @@ import { Permission, useUser } from '@app/hooks/useUser';
 import defineMessages from '@app/utils/defineMessages';
 import { Transition } from '@headlessui/react';
 import {
+  CalendarDaysIcon,
   ClockIcon,
   CogIcon,
   ExclamationTriangleIcon,
@@ -15,7 +16,6 @@ import {
   TvIcon,
   UsersIcon,
   XMarkIcon,
-  CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -61,6 +61,13 @@ const SidebarLinks: SidebarLinkProps[] = [
     messagesKey: 'dashboard',
     svgIcon: <SparklesIcon className="mr-3 h-6 w-6" />,
     activeRegExp: /^\/(discover\/?)?$/,
+  },
+  {
+    href: '/calendar',
+    messagesKey: 'calendar',
+    svgIcon: <CalendarDaysIcon className="mr-3 h-6 w-6" />,
+    activeRegExp: /^\/calendar/,
+    dataTestId: 'sidebar-menu-calendar',
   },
   {
     href: '/discover/movies',
@@ -201,9 +208,9 @@ const Sidebar = ({
                   >
                     {/* Mobile logo */}
                     <div className="flex items-center justify-center px-4 py-6">
-                      <Link href="/" className="block relative h-12 w-48">
+                      <Link href="/" className="relative block h-12 w-48">
                         {/* Light theme */}
-                        <span className="block dark:hidden relative h-12 w-48">
+                        <span className="relative block h-12 w-48 dark:hidden">
                           <Image
                             src="/logo_full.svg"
                             alt="Jellyseerr"
@@ -213,7 +220,7 @@ const Sidebar = ({
                           />
                         </span>
                         {/* Dark theme */}
-                        <span className="hidden dark:block relative h-12 w-48">
+                        <span className="relative hidden h-12 w-48 dark:block">
                           <Image
                             src="/logo_full.svg"
                             alt="Jellyseerr"
@@ -286,7 +293,7 @@ const Sidebar = ({
               <div className="flex flex-shrink-0 items-center justify-center px-4 py-4">
                 <Link href="/" className="relative block h-24 w-72">
                   {/* Light theme */}
-                  <span className="block dark:hidden relative h-24 w-72">
+                  <span className="relative block h-24 w-72 dark:hidden">
                     <Image
                       src="/logo_stacked.svg"
                       alt="Jellyseerr"
@@ -296,7 +303,7 @@ const Sidebar = ({
                     />
                   </span>
                   {/* Dark theme */}
-                  <span className="hidden dark:block relative h-24 w-72">
+                  <span className="relative hidden h-24 w-72 dark:block">
                     <Image
                       src="/logo_stacked.svg"
                       alt="Jellyseerr"
