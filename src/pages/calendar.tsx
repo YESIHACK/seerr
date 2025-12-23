@@ -9,7 +9,7 @@ export default function CalendarPage() {
   const { locale } = useContext(LanguageContext);
   const calendarRef = useRef<any>(null); // or more properly: RefObject<FullCalendar>
 
-  const [calendarView, setCalendarView] = useState('dayGridMonth');
+  const [calendarView, setCalendarView] = useState('dayGridWeek');
   const [events, setEvents] = useState<any[]>([]);
   const [filter, setFilter] = useState<'all' | 'tv' | 'movie'>('all');
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
@@ -59,7 +59,7 @@ export default function CalendarPage() {
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
-      const view = isMobile ? 'dayGridDay' : 'dayGridMonth';
+      const view = isMobile ? 'dayGridDay' : 'dayGridWeek';
       setCalendarView(view);
       calendarRef.current?.getApi().changeView(view);
     };
@@ -1049,6 +1049,10 @@ export default function CalendarPage() {
 
         .fc-col-header-cell {
           color: #ccc;
+        }
+
+        .fc-daygrid-day-top {
+          flex-direction: row !important;
         }
 
         .fc-daygrid-day-number {
