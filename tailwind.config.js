@@ -11,6 +11,17 @@ module.exports = {
   ],
   theme: {
     extend: {
+      keyframes: {
+        jiggle: {
+          '0%, 100%': { transform: 'rotate(0deg)' },
+          '25%': { transform: 'rotate(-5deg)' },
+          '50%': { transform: 'rotate(5deg)' },
+          '75%': { transform: 'rotate(-5deg)' },
+        },
+      },
+      animation: {
+        jiggle: 'jiggle 0.4s ease-in-out 2',
+      },
       transitionProperty: {
         'max-height': 'max-height',
         width: 'width',

@@ -12,6 +12,7 @@ import {
   ExclamationTriangleIcon,
   EyeSlashIcon,
   FilmIcon,
+  HeartIcon,
   SparklesIcon,
   TvIcon,
   UsersIcon,
@@ -270,6 +271,17 @@ const Sidebar = ({
                       <UserWarnings onClick={() => setClosed()} />
                     </div>
 
+                    <div className="px-2 pb-2">
+                      <a
+                        href="https://github.com/sponsors/YESIHACK"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex animate-jiggle items-center justify-center space-x-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 p-2 text-sm font-bold text-white shadow-md transition duration-300 hover:from-pink-400 hover:to-rose-400"
+                      >
+                        <HeartIcon className="h-5 w-5" />
+                        <span>Sponsor me</span>
+                      </a>
+                    </div>
                     {hasPermission(Permission.ADMIN) && (
                       <div className="px-2">
                         <VersionStatus onClick={() => setClosed()} />
@@ -376,6 +388,17 @@ const Sidebar = ({
 
               <div className="px-2">
                 <UserWarnings />
+              </div>
+              <div className="px-2 pb-2">
+                <a
+                  href="https://github.com/sponsors/YESIHACK"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex animate-jiggle items-center justify-center space-x-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 p-2 text-sm font-bold text-white shadow-md transition duration-300 hover:from-pink-400 hover:to-rose-400"
+                >
+                  <HeartIcon className="h-5 w-5" />
+                  <span>Sponsor me</span>
+                </a>
               </div>
               {hasPermission(Permission.ADMIN) && (
                 <div className="px-2">

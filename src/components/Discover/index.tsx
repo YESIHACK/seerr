@@ -1,3 +1,4 @@
+import Calendar from '@app/components/Calendar';
 import Button from '@app/components/Common/Button';
 import ConfirmButton from '@app/components/Common/ConfirmButton';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
@@ -455,7 +456,14 @@ const Discover = () => {
         }
 
         return (
-          <div key={`discover-slider-${slider.id}`}>{sliderComponent}</div>
+          <div key={`discover-slider-${slider.id}`}>
+            {sliderComponent}
+            {slider.type === DiscoverSliderType.RECENTLY_ADDED && (
+              <div className="mb-6 mt-6">
+                <Calendar isDiscoverView />
+              </div>
+            )}
+          </div>
         );
       })}
     </>
