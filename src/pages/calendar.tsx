@@ -99,8 +99,8 @@ export default function CalendarPage() {
             ? (e.year ? `${e.title} (${e.year})` : e.title) +
               (e.availabilityType ? ` [${e.availabilityType}]` : '')
             : e.episodeCode
-            ? `${e.title} - ${e.episodeCode}`
-            : e.title;
+              ? `${e.title} - ${e.episodeCode}`
+              : e.title;
 
           const fanart =
             e.images?.find((img: any) => img.coverType === 'fanart')
@@ -249,8 +249,8 @@ export default function CalendarPage() {
               event.type === 'tv'
                 ? '<span class="media-dot tv-dot" aria-hidden="true"></span>'
                 : event.type === 'movie'
-                ? '<span class="media-dot movie-dot" aria-hidden="true"></span>'
-                : '';
+                  ? '<span class="media-dot movie-dot" aria-hidden="true"></span>'
+                  : '';
             // Prefer displayTitle then title
             titleLine.innerHTML = `${dot}<span class="fc-event-title-text">${
               event.displayTitle || event.title || arg.event.title || ''
@@ -395,7 +395,7 @@ export default function CalendarPage() {
             role="button"
             tabIndex={0}
           >
-            <span className="media-dot tv-dot"></span> TV Show
+            <span className="media-dot tv-dot" /> TV Show
           </div>
           <div
             className={`legend-item interactable ${
@@ -410,7 +410,7 @@ export default function CalendarPage() {
             role="button"
             tabIndex={0}
           >
-            <span className="media-dot movie-dot"></span> Movie
+            <span className="media-dot movie-dot" /> Movie
           </div>
           <div className="legend-item">
             <span className="download-badge download-requested">Requested</span>{' '}
@@ -450,7 +450,7 @@ export default function CalendarPage() {
                     ? `url(${selectedEvent.fanart})`
                     : undefined,
                 }}
-              ></div>
+              />
               <div className="popup-foreground" ref={popupRef}>
                 <h2 className="popup-title">
                   {selectedEvent.displayTitle || selectedEvent.title}
