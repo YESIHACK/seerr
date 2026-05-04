@@ -47,10 +47,14 @@ jobs:
           restore-keys: |
             trivy-${{ runner.os }}-
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Run Trivy image scan
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
-          image-ref: ghcr.io/${{ github.repository }}:latest
+          image-ref: ghcr.io/${{ env.REPO_LC }}:latest
           format: sarif
           output: trivy.sarif
           ignore-unfixed: true

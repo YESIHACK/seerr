@@ -46,6 +46,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Package helm charts
         run: |
           mkdir -p ./.cr-release-packages
@@ -55,7 +59,7 @@ jobs:
               # get current version
               current_version=$(grep '^version:' "$chart_path/Chart.yaml" | awk '{print $2}')
               # try to get current release version
-              if oras manifest fetch "ghcr.io/${{ github.repository }}/${chart_name}:${current_version}" >/dev/null 2>&1; then
+              if oras manifest fetch "ghcr.io/${{ env.REPO_LC }}/${chart_name}:${current_version}" >/dev/null 2>&1; then
                 echo "No version change for $chart_name. Skipping."
               else
                 helm dependency build "$chart_path"
@@ -120,6 +124,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Push charts to GHCR
         env:
           COSIGN_YES: true
@@ -128,19 +136,19 @@ jobs:
             # push chart to OCI
             chart_release_file=$(basename "$chart_path")
             chart_name=${chart_release_file%-*}
-            helm push ${chart_path} oci://ghcr.io/${{ github.repository }} |& tee helm-push-output.log
+            helm push ${chart_path} oci://ghcr.io/${{ env.REPO_LC }} |& tee helm-push-output.log
             chart_digest=$(awk -F "[, ]+" '/Digest/{print $NF}' < helm-push-output.log)
             # sign chart
-            cosign sign "ghcr.io/${{ github.repository }}/${chart_name}@${chart_digest}"
+            cosign sign "ghcr.io/${{ env.REPO_LC }}/${chart_name}@${chart_digest}"
             # push artifacthub-repo.yml to OCI
             oras push \
-              ghcr.io/${{ github.repository }}/${chart_name}:artifacthub.io \
+              ghcr.io/${{ env.REPO_LC }}/${chart_name}:artifacthub.io \
               --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
               charts/$chart_name/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml \
               |& tee oras-push-output.log
             artifacthub_digest=$(grep "Digest:" oras-push-output.log | awk '{print $2}')
             # sign artifacthub-repo.yml
-            cosign sign "ghcr.io/${{ github.repository }}/${chart_name}:artifacthub.io@${artifacthub_digest}"
+            cosign sign "ghcr.io/${{ env.REPO_LC }}/${chart_name}:artifacthub.io@${artifacthub_digest}"
           done
 
   verify:
@@ -172,6 +180,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Verify signatures for each chart tag
         run: |
           for chart_path in $(find .cr-release-packages -name '*.tgz' -print); do
@@ -180,7 +192,7 @@ jobs:
             version=${chart_release_file#$chart_name-}
             version=${version%.tgz}
 
-            cosign verify "ghcr.io/${{ github.repository }}/${chart_name}:${version}" \
+            cosign verify "ghcr.io/${{ env.REPO_LC }}/${chart_name}:${version}" \
               --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
           done

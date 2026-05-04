@@ -139,18 +139,26 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         with:
           images: |
-            ghcr.io/${{ github.repository }}
+            ghcr.io/${{ env.REPO_LC }}
           tags: |
             type=semver,pattern={{raw}}
             type=semver,pattern=v{{major}}.{{minor}}
             type=semver,pattern=v{{major}}
           labels: |
             org.opencontainers.image.created=${{ steps.ts.outputs.TIMESTAMP }}
+
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Build & Push (multi-arch)
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
@@ -174,7 +182,7 @@ jobs:
       - name: Resolve manifest digest
         id: digests
         run: |
-          DIGEST=$(docker buildx imagetools inspect "ghcr.io/${{ github.repository }}:${{ env.VERSION }}" --format '{{json .Manifest.Digest}}' | tr -d '"')
+          DIGEST=$(docker buildx imagetools inspect "ghcr.io/${{ env.REPO_LC }}:${{ env.VERSION }}" --format '{{json .Manifest.Digest}}' | tr -d '"')
           echo "IMAGE_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
 
       - name: Also tag :latest (non-pre-release only)
@@ -182,8 +190,8 @@ jobs:
         if: ${{ !contains(env.VERSION, '-') }}
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/${{ github.repository }}:latest \
-            ghcr.io/${{ github.repository }}:${{ env.VERSION }}
+            -t ghcr.io/${{ env.REPO_LC }}:latest \
+            ghcr.io/${{ env.REPO_LC }}:${{ env.VERSION }}
 
   sign:
     name: Sign images and create SBOM attestations
@@ -221,21 +229,25 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Sign images
         run: |
-          cosign sign --recursive "ghcr.io/${{ github.repository }}@${{ needs.publish.outputs.image_digest }}"
+          cosign sign --recursive "ghcr.io/${{ env.REPO_LC }}@${{ needs.publish.outputs.image_digest }}"
 
       - name: Generate SBOMs
         run: |
           trivy image --format cyclonedx --output seerr-ghcr-image-${{ env.VERSION }}.sbom \
-            "ghcr.io/${{ github.repository }}@${{ needs.publish.outputs.image_digest }}"
+            "ghcr.io/${{ env.REPO_LC }}@${{ needs.publish.outputs.image_digest }}"
 
       - name: Attest SBOMs
         run: |
           cosign attest \
             --type cyclonedx \
             --predicate seerr-ghcr-image-${{ env.VERSION }}.sbom \
-            "ghcr.io/${{ github.repository }}@${{ needs.publish.outputs.image_digest }}"
+            "ghcr.io/${{ env.REPO_LC }}@${{ needs.publish.outputs.image_digest }}"
 
       - name: Upload SBOMs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -257,9 +269,13 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Verify signatures
         run: |
-          cosign verify "ghcr.io/${{ github.repository }}@${{ needs.publish.outputs.image_digest }}" \
+          cosign verify "ghcr.io/${{ env.REPO_LC }}@${{ needs.publish.outputs.image_digest }}" \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
@@ -269,7 +285,7 @@ jobs:
 
       # - name: Verify attestations
       #   run: |
-      #     cosign verify-attestation "ghcr.io/${{ github.repository }}@${{ needs.publish.outputs.image_digest }}" \
+      #     cosign verify-attestation "ghcr.io/${{ env.REPO_LC }}@${{ needs.publish.outputs.image_digest }}" \
       #       --type cyclonedx \
       #       --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
       #       --certificate-oidc-issuer "https://token.actions.githubusercontent.com" > /dev/null

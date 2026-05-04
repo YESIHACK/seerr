@@ -113,18 +113,26 @@ jobs:
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
           echo "Publishing preview version: ${VER}"
 
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         with:
           images: |
             ${{ env.DOCKER_HUB }}
-            ghcr.io/${{ github.repository }}
+            ghcr.io/${{ env.REPO_LC }}
           tags: |
             type=raw,value=preview-${{ steps.ver.outputs.version }}
           labels: |
             org.opencontainers.image.version=preview-${{ steps.ver.outputs.version }}
             org.opencontainers.image.created=${{ steps.ts.outputs.TIMESTAMP }}
+
+      - name: Set lower case repository name
+        run: |
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Build & Push (multi-arch, single tag)
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
