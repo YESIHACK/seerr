@@ -268,7 +268,7 @@ const Sidebar = ({
                       })}
                     </nav>
                     <div className="px-2">
-                      <UserWarnings onClick={() => setClosed()} />
+                      <UserWarnings />
                     </div>
 
                     <div className="px-2 pb-2">
