@@ -14,8 +14,6 @@ on:
 permissions:
   contents: read
 
-env:
-  DOCKER_HUB: seerr/seerr
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -234,11 +232,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
@@ -286,42 +279,3 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: false
 
-  discord:
-    name: Send Discord Notification
-    needs: publish
-    if: always() && github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Determine Workflow Status
-        id: status
-        run: |
-          case "${{ needs.publish.result }}" in
-            success)   echo "status=Success"   >> $GITHUB_OUTPUT; echo "colour=3066993"  >> $GITHUB_OUTPUT ;;
-            failure)   echo "status=Failure"   >> $GITHUB_OUTPUT; echo "colour=15158332" >> $GITHUB_OUTPUT ;;
-            cancelled) echo "status=Cancelled" >> $GITHUB_OUTPUT; echo "colour=10181046" >> $GITHUB_OUTPUT ;;
-            *)         echo "status=Skipped"   >> $GITHUB_OUTPUT; echo "colour=9807270"  >> $GITHUB_OUTPUT ;;
-          esac
-
-      - name: Send Discord notification
-        shell: bash
-        run: |
-          WEBHOOK="${{ secrets.DISCORD_WEBHOOK }}"
-
-          PAYLOAD=$(cat <<EOF
-          {
-            "embeds": [{
-              "title": "${{ steps.status.outputs.status }}: ${{ github.workflow }}",
-              "color": ${{ steps.status.outputs.colour }},
-              "fields": [
-                { "name": "Repository",   "value": "[${{ github.repository }}](${{ github.server_url }}/${{ github.repository }})", "inline": true },
-                { "name": "Ref",          "value": "${{ github.ref }}", "inline": true },
-                { "name": "Event",        "value": "${{ github.event_name }}", "inline": true },
-                { "name": "Triggered by", "value": "${{ github.actor }}", "inline": true },
-                { "name": "Workflow",     "value": "[${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": true }
-              ],
-            }]
-          }
-          EOF
-          )
-
-          curl -sS -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK" || true
