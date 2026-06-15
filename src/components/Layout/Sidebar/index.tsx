@@ -88,13 +88,7 @@ const SidebarLinks: SidebarLinkProps[] = [
     svgIcon: <ClockIcon className="mr-3 h-6 w-6" />,
     activeRegExp: /^\/requests/,
   },
-  {
-    href: '/calendar',
-    messagesKey: 'calendar',
-    svgIcon: <CalendarDaysIcon className="mr-3 h-6 w-6" />,
-    activeRegExp: /^\/calendar/,
-    dataTestId: 'sidebar-menu-calendar',
-  },
+
   {
     href: '/blocklist',
     messagesKey: 'blocklist',
