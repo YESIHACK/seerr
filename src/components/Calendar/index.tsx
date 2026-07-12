@@ -5,7 +5,11 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import Head from 'next/head';
 import { useContext, useEffect, useRef, useState } from 'react';
 
-export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: boolean }) {
+export default function Calendar({
+  isDiscoverView = false,
+}: {
+  isDiscoverView?: boolean;
+}) {
   const { locale } = useContext(LanguageContext);
   const calendarRef = useRef<any>(null); // or more properly: RefObject<FullCalendar>
 
@@ -53,13 +57,32 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
     return match ? parseInt(match[1], 10) : '';
   };
 
+  /** Extract a short resolution label from a quality name like "HDTV-1080p" or "Bluray-2160p" */
+  const extractResolution = (quality: string): string => {
+    if (!quality) return '';
+    const match = quality.match(/(\d{3,4}p)/i);
+    if (match) {
+      const res = match[1].toLowerCase();
+      if (res === '2160p') return '4K';
+      return res.toUpperCase();
+    }
+    // Fallback: return the full quality name shortened
+    return quality;
+  };
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getEventClass = (_event?: any) => 'event-neutral';
 
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
-      const view = isDiscoverView ? (isMobile ? 'dayGridDay' : 'dayGridWeek') : (isMobile ? 'dayGridDay' : 'dayGridWeek');
+      const view = isDiscoverView
+        ? isMobile
+          ? 'dayGridDay'
+          : 'dayGridWeek'
+        : isMobile
+          ? 'dayGridDay'
+          : 'dayGridWeek';
       setCalendarView(view);
       calendarRef.current?.getApi().changeView(view);
     };
@@ -175,7 +198,9 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
           headerToolbar={{
             start: 'prev,today,next',
             center: 'title',
-            end: isDiscoverView ? 'customFilter' : 'dayGridDay,dayGridWeek,dayGridMonth customFilter',
+            end: isDiscoverView
+              ? 'customFilter'
+              : 'dayGridDay,dayGridWeek,dayGridMonth customFilter',
           }}
           buttonText={{
             today: 'Today',
@@ -235,6 +260,12 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
               runtime: info.event.extendedProps.runtime,
               genres: info.event.extendedProps.genres,
               episodes: info.event.extendedProps.episodes,
+              qualityProfileName: info.event.extendedProps.qualityProfileName,
+              quality: info.event.extendedProps.quality,
+              language: info.event.extendedProps.language,
+              episodeCount: info.event.extendedProps.episodeCount,
+              episodeFileCount: info.event.extendedProps.episodeFileCount,
+              availabilityType: info.event.extendedProps.availabilityType,
             });
             document.body.style.overflow = 'hidden';
           }}
@@ -360,10 +391,58 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
               ? `<span class="download-badge download-${statusClass}">${statusLabel}</span>`
               : '';
 
+            // Build quality badge
+            let qualityBadge = '';
+            const qualityText = event.quality
+              ? extractResolution(event.quality)
+              : '';
+            if (qualityText) {
+              qualityBadge = `<span class="quality-badge">${qualityText}</span>`;
+            }
+
+            // Build language badges (one per language)
+            let languageBadges = '';
+            if (event.language) {
+              const langs = event.language
+                .split(',')
+                .map((l: string) => l.trim())
+                .filter(Boolean);
+              languageBadges = langs
+                .map((lang: string) => {
+                  const isSub = lang.endsWith('(Sub)');
+                  const badgeClass = isSub
+                    ? 'language-badge language-badge-sub'
+                    : 'language-badge';
+                  return `<span class="${badgeClass}">${lang}</span>`;
+                })
+                .join(' ');
+            }
+
+            // Build episode count badge for TV
+            let episodeCountBadge = '';
+            if (
+              event.type === 'tv' &&
+              event.episodeFileCount !== undefined &&
+              event.episodeCount !== undefined &&
+              event.episodeCount > 0
+            ) {
+              episodeCountBadge = `<span class="episode-count-badge">${event.episodeFileCount}/${event.episodeCount} eps</span>`;
+            }
+
             const metaHtml = `${metaParts.join(
               ' | '
             )} ${statusBadge} ${availabilityBadge}`;
             subLine.innerHTML = metaHtml.trim();
+
+            // Add badges line for quality, language, episode count
+            const badgesLine = document.createElement('div');
+            badgesLine.className = 'fc-event-badges';
+            const badgesHtml = [qualityBadge, languageBadges, episodeCountBadge]
+              .filter(Boolean)
+              .join(' ');
+            if (badgesHtml) {
+              badgesLine.innerHTML = badgesHtml;
+            }
 
             // Add episode title line for TV shows
             if (event.type === 'tv' && event.episodeTitle) {
@@ -372,10 +451,12 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
               epTitleLine.innerHTML = event.episodeTitle;
               container.appendChild(titleLine);
               container.appendChild(subLine);
+              if (badgesHtml) container.appendChild(badgesLine);
               container.appendChild(epTitleLine);
             } else {
               container.appendChild(titleLine);
               container.appendChild(subLine);
+              if (badgesHtml) container.appendChild(badgesLine);
             }
 
             return { domNodes: [container] };
@@ -440,6 +521,15 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
             <span className="availability-badge avail-physical">Physical</span>{' '}
             Physical
           </div>
+          <div className="legend-item">
+            <span className="quality-badge">1080P</span> Quality
+          </div>
+          <div className="legend-item">
+            <span className="language-badge">Language</span> Language
+          </div>
+          <div className="legend-item">
+            <span className="episode-count-badge">Episodes</span> Available
+          </div>
         </div>
 
         {selectedEvent && (
@@ -458,6 +548,65 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
                   {selectedEvent.displayTitle || selectedEvent.title}
                 </h2>
 
+                {/* Quality, Language, and Episode Info Section */}
+                <div className="popup-info-grid">
+                  {selectedEvent.qualityProfileName && (
+                    <div className="popup-info-item">
+                      <span className="popup-info-label">Quality Profile</span>
+                      <span className="popup-info-value popup-info-quality-profile">
+                        {selectedEvent.qualityProfileName}
+                      </span>
+                    </div>
+                  )}
+                  {selectedEvent.quality && (
+                    <div className="popup-info-item">
+                      <span className="popup-info-label">File Quality</span>
+                      <span className="popup-info-value">
+                        <span className="quality-badge">
+                          {extractResolution(selectedEvent.quality)}
+                        </span>
+                        <span className="popup-quality-detail">
+                          {selectedEvent.quality}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {selectedEvent.language && (
+                    <div className="popup-info-item popup-info-item-wide">
+                      <span className="popup-info-label">Languages</span>
+                      <span className="popup-info-value popup-info-languages">
+                        {selectedEvent.language
+                          .split(',')
+                          .map((lang: string) => lang.trim())
+                          .filter(Boolean)
+                          .map((lang: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className={`language-badge ${lang.endsWith('(Sub)') ? 'language-badge-sub' : ''}`}
+                            >
+                              {lang}
+                            </span>
+                          ))}
+                      </span>
+                    </div>
+                  )}
+                  {selectedEvent.type === 'tv' &&
+                    selectedEvent.episodeCount !== undefined &&
+                    selectedEvent.episodeCount > 0 && (
+                      <div className="popup-info-item">
+                        <span className="popup-info-label">
+                          Episodes Available
+                        </span>
+                        <span className="popup-info-value">
+                          <span className="episode-count-badge">
+                            {selectedEvent.episodeFileCount}/
+                            {selectedEvent.episodeCount} episodes
+                          </span>
+                        </span>
+                      </div>
+                    )}
+                </div>
+
                 {Array.isArray(selectedEvent.episodes) &&
                 selectedEvent.episodes.length > 0 ? (
                   <>
@@ -469,9 +618,23 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
                     </h3>
                     <div className="popup-episodes-list">
                       {selectedEvent.episodes.map((ep: any, idx: number) => (
-                        <div key={idx} className="popup-episode">
-                          Episode {extractEpisodeNumber(ep.episodeCode)}
-                          {ep.episodeTitle ? ` – ${ep.episodeTitle}` : ''}
+                        <div key={idx} className="popup-episode-row">
+                          <div className="popup-episode">
+                            Episode {extractEpisodeNumber(ep.episodeCode)}
+                            {ep.episodeTitle ? ` – ${ep.episodeTitle}` : ''}
+                          </div>
+                          <div className="popup-episode-meta">
+                            {ep.quality && (
+                              <span className="quality-badge quality-badge-sm">
+                                {extractResolution(ep.quality)}
+                              </span>
+                            )}
+                            {ep.language && (
+                              <span className="language-badge language-badge-sm">
+                                {ep.language}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -708,6 +871,26 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
         .popup-episode {
           margin-bottom: 0.25rem;
         }
+
+        .popup-episode-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.25rem 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .popup-episode-row:last-child {
+          border-bottom: none;
+        }
+
+        .popup-episode-meta {
+          display: flex;
+          gap: 0.35rem;
+          align-items: center;
+          flex-shrink: 0;
+        }
+
         .fc-event-title {
           font-weight: bold;
           font-size: 0.9rem;
@@ -891,6 +1074,129 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
         .download-unknown {
           background: #9ca3af;
         } /* gray */
+
+        /* ========== NEW: Quality, Language, Episode Count Badges ========== */
+
+        .fc-event-badges {
+          display: flex;
+          gap: 0.3rem;
+          flex-wrap: wrap;
+          align-items: center;
+          margin-top: 2px;
+        }
+
+        /* Quality badge — teal/emerald */
+        .quality-badge {
+          font-size: 0.65rem;
+          font-weight: 700;
+          padding: 1px 7px;
+          border-radius: 999px;
+          display: inline-block;
+          vertical-align: middle;
+          color: #fff;
+          background: linear-gradient(135deg, #059669, #10b981);
+          letter-spacing: 0.03em;
+        }
+
+        .quality-badge-sm {
+          font-size: 0.6rem;
+          padding: 1px 5px;
+        }
+
+        /* Language badge — slate/blue */
+        .language-badge {
+          font-size: 0.65rem;
+          font-weight: 700;
+          padding: 1px 7px;
+          border-radius: 999px;
+          display: inline-block;
+          vertical-align: middle;
+          color: #fff;
+          background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          letter-spacing: 0.03em;
+        }
+
+        .language-badge-sm {
+          font-size: 0.6rem;
+          padding: 1px 5px;
+        }
+
+        /* Subtitle language badge — muted to distinguish from audio */
+        .language-badge-sub {
+          background: linear-gradient(135deg, #6b7280, #9ca3af);
+          font-style: italic;
+        }
+
+        /* Wide info item for languages grid */
+        .popup-info-item-wide {
+          grid-column: 1 / -1;
+        }
+
+        .popup-info-languages {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.3rem;
+        }
+
+        /* Episode count badge — warm amber/orange */
+        .episode-count-badge {
+          font-size: 0.65rem;
+          font-weight: 700;
+          padding: 1px 7px;
+          border-radius: 999px;
+          display: inline-block;
+          vertical-align: middle;
+          color: #fff;
+          background: linear-gradient(135deg, #d97706, #f59e0b);
+          letter-spacing: 0.03em;
+        }
+
+        /* Popup info grid */
+        .popup-info-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 0.75rem;
+          margin: 0.75rem 0 1rem;
+          padding: 0.75rem;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 0.5rem;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .popup-info-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .popup-info-label {
+          font-size: 0.65rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #9ca3af;
+        }
+
+        .popup-info-value {
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: #e5e7eb;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          flex-wrap: wrap;
+        }
+
+        .popup-info-quality-profile {
+          color: #34d399;
+          font-weight: 600;
+        }
+
+        .popup-quality-detail {
+          font-size: 0.7rem;
+          color: #9ca3af;
+          font-style: italic;
+        }
 
         /* Event layout tweaks */
         .fc-event-custom {
@@ -1139,6 +1445,23 @@ export default function Calendar({ isDiscoverView = false }: { isDiscoverView?: 
           .fc-event-sub {
             font-size: 0.75rem;
             color: #bbb;
+          }
+
+          .fc-event-badges {
+            gap: 0.2rem;
+          }
+
+          .quality-badge,
+          .language-badge,
+          .episode-count-badge {
+            font-size: 0.58rem;
+            padding: 1px 5px;
+          }
+
+          .popup-info-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            padding: 0.5rem;
           }
         }
       `}</style>

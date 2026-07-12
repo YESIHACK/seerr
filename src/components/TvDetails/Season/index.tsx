@@ -49,11 +49,51 @@ const Season = ({ seasonNumber, tvId }: SeasonProps) => {
                     <h3 className="text-lg">
                       {episode.episodeNumber} - {episode.name}
                     </h3>
-                    {episode.airDate && (
-                      <AirDateBadge airDate={episode.airDate} />
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {episode.airDate && (
+                        <AirDateBadge airDate={episode.airDate} />
+                      )}
+                      {episode.hasFile && (
+                        <span className="rounded-full bg-green-500 px-2 py-0.5 text-xs font-bold text-white">
+                          Available on server
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {episode.overview && <p>{episode.overview}</p>}
+
+                  {/* Badges row for quality and languages */}
+                  {(episode.quality || episode.language) && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {episode.quality && (
+                        <span className="rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white">
+                          {episode.quality}
+                        </span>
+                      )}
+                      {episode.language &&
+                        episode.language
+                          .split(',')
+                          .map((lang: string) => lang.trim())
+                          .filter(Boolean)
+                          .map((lang: string, idx: number) => {
+                            const isSub = lang.endsWith('(Sub)');
+                            const bgClass = isSub
+                              ? 'from-gray-500 to-gray-400 italic'
+                              : 'from-indigo-600 to-violet-600';
+                            return (
+                              <span
+                                key={idx}
+                                className={`rounded-full bg-gradient-to-br px-2 py-0.5 text-[0.65rem] font-bold text-white ${bgClass} tracking-wide`}
+                              >
+                                {lang}
+                              </span>
+                            );
+                          })}
+                    </div>
+                  )}
+
+                  {episode.overview && (
+                    <p className="mt-2">{episode.overview}</p>
+                  )}
                 </div>
                 {episode.stillPath && (
                   <div className="relative aspect-video xl:h-32">

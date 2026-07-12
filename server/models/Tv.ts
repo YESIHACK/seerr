@@ -38,6 +38,9 @@ interface Episode {
   stillPath?: string;
   voteAverage: number;
   voteCount: number;
+  hasFile?: boolean;
+  quality?: string;
+  language?: string;
 }
 
 interface Season {
@@ -48,6 +51,8 @@ interface Season {
   overview: string;
   posterPath?: string;
   seasonNumber: number;
+  sonarrHasFile?: boolean;
+  sonarrIsPartial?: boolean;
 }
 
 export interface SeasonWithEpisodes extends Omit<Season, 'episodeCount'> {

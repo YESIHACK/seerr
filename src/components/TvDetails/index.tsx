@@ -907,8 +907,9 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                               </div>
                             </>
                           )}
-                          {mSeason?.status ===
-                            MediaStatus.PARTIALLY_AVAILABLE && (
+                          {(season.sonarrIsPartial ||
+                            mSeason?.status ===
+                              MediaStatus.PARTIALLY_AVAILABLE) && (
                             <>
                               <div className="hidden md:flex">
                                 <Badge badgeType="success">
@@ -924,7 +925,8 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                               </div>
                             </>
                           )}
-                          {mSeason?.status === MediaStatus.AVAILABLE && (
+                          {(season.sonarrHasFile ||
+                            mSeason?.status === MediaStatus.AVAILABLE) && (
                             <>
                               <div className="hidden md:flex">
                                 <Badge badgeType="success">

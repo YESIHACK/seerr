@@ -17,6 +17,11 @@ type Event = {
   seriesOverview?: string;
   seriesStatus?: string;
   downloadStatus?: string;
+  qualityProfileName?: string;
+  quality?: string;
+  language?: string;
+  episodeCount?: number;
+  episodeFileCount?: number;
 };
 
 function groupTvEpisodes(episodes: Event[]): Event[] {
@@ -53,6 +58,23 @@ function groupTvEpisodes(episodes: Event[]): Event[] {
         s1 === s2 ? `S${s1}E${e1}–E${e2}` : `S${s1}E${e1}–S${s2}E${e2}`;
     }
 
+    // Collect unique qualities and languages from all episodes in the group
+    const qualities = [
+      ...new Set(group.map((e: any) => e.quality).filter(Boolean)),
+    ];
+    // Deduplicate individual languages across all episodes (each ep may have "English, Japanese, Spanish (Sub)")
+    const langSet = new Set<string>();
+    for (const ep of group) {
+      if (ep.language) {
+        for (const l of (ep.language as string)
+          .split(',')
+          .map((s: string) => s.trim())) {
+          if (l) langSet.add(l);
+        }
+      }
+    }
+    const languages = [...langSet];
+
     return {
       title,
       start: parsedStart,
@@ -64,12 +86,19 @@ function groupTvEpisodes(episodes: Event[]): Event[] {
       year: first.year,
       seriesStatus: first.seriesStatus,
       seriesOverview: first.seriesOverview,
+      qualityProfileName: first.qualityProfileName || '',
+      quality: qualities.join(', '),
+      language: languages.join(', '),
+      episodeCount: first.episodeCount || 0,
+      episodeFileCount: first.episodeFileCount || 0,
       episodeCode,
-      episodes: group.map((e) => ({
+      episodes: group.map((e: any) => ({
         episodeCode: e.episodeCode,
         episodeTitle: e.episodeTitle,
         status: e.status,
         description: e.description,
+        quality: e.quality || '',
+        language: e.language || '',
       })),
     };
   });
