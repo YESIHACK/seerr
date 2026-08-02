@@ -42,9 +42,11 @@ import searchRoutes from './search';
 import serviceRoutes from './service';
 import tvRoutes from './tv';
 import user from './user';
+import webhookRoutes from './webhook';
 
 const router = Router();
 
+router.use('/webhook', webhookRoutes);
 router.use(checkUser);
 
 router.get<unknown, StatusResponse>('/status', async (req, res) => {

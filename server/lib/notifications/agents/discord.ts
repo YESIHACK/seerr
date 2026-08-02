@@ -123,6 +123,7 @@ class DiscordAgent
           status = intl.formatMessage(globalMessages.processing);
           break;
         case Notification.MEDIA_AVAILABLE:
+        case Notification.EPISODE_AVAILABLE:
           color = EmbedColors.GREEN;
           status = intl.formatMessage(globalMessages.available);
           break;

@@ -8140,6 +8140,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OverrideRule'
+  /webhook/sonarr:
+    post:
+      summary: Handle Sonarr incoming webhook
+      description: Process Sonarr Download events to notify users of episode availability
+      tags:
+        - webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed successfully
+      security: []
 security:
   - cookieAuth: []
   - apiKey: []
