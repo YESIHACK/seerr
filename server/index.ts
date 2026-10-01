@@ -294,11 +294,17 @@ app
         logger.info(`Server ready on ${host} port ${port}`, {
           label: 'Server',
         });
+        fetch(`http://${host}:${port}/api/calendar`).catch((err) => {
+          logger.error('Failed to pre-warm calendar cache on boot', { message: err.message });
+        });
       });
     } else {
       httpServer = server.listen(port, () => {
         logger.info(`Server ready on port ${port}`, {
           label: 'Server',
+        });
+        fetch(`http://127.0.0.1:${port}/api/calendar`).catch((err) => {
+          logger.error('Failed to pre-warm calendar cache on boot', { message: err.message });
         });
       });
     }

@@ -1,7 +1,6 @@
 import { getRadarrUpcoming } from '@app/lib/radarr';
 import { getSonarrUpcoming } from '@app/lib/sonarr';
 import cacheManager from '@server/lib/cache';
-import logger from '@server/logger';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 type Event = {
@@ -117,15 +116,15 @@ export default async function handler(
     const cachedData = cache.data.get<Event[]>(cacheKey);
 
     if (cachedData && !refresh) {
-      logger.debug('[calendar API] Returning cached events');
+      console.log('[calendar API] Returning cached events');
       const ttl = cache.data.getTtl(cacheKey);
       const lastUpdated = ttl ? ttl - 600000 : Date.now();
       return res.status(200).json({ lastUpdated, events: cachedData });
     }
 
-    logger.debug('[calendar API] Fetching Sonarr...');
+    console.log('[calendar API] Fetching Sonarr...');
     const sonarrData = await getSonarrUpcoming();
-    logger.debug(`[calendar API] Sonarr returned ${sonarrData.length} events`);
+    console.log(`[calendar API] Sonarr returned ${sonarrData.length} events`);
 
     // ✅ Enrich with tmdbId from series if needed
     const enrichedSonarr = sonarrData.map((item) => ({
@@ -134,22 +133,20 @@ export default async function handler(
     }));
 
     const groupedTv = groupTvEpisodes(enrichedSonarr);
-    logger.debug(`[calendar API] Grouped to ${groupedTv.length} TV events`);
+    console.log(`[calendar API] Grouped to ${groupedTv.length} TV events`);
 
-    logger.debug('[calendar API] Fetching Radarr...');
+    console.log('[calendar API] Fetching Radarr...');
     const radarrData = await getRadarrUpcoming();
-    logger.debug(`[calendar API] Radarr returned ${radarrData.length} events`);
+    console.log(`[calendar API] Radarr returned ${radarrData.length} events`);
 
     const events = [...groupedTv, ...radarrData];
-    logger.debug(`[calendar API] Final events length: ${events.length}`);
+    console.log(`[calendar API] Final events length: ${events.length}`);
 
     cache.data.set(cacheKey, events);
 
     res.status(200).json({ lastUpdated: Date.now(), events });
-  } catch (error: unknown) {
-    logger.error('[calendar API] Failed to load:', {
-      errorMessage: error instanceof Error ? error.message : 'Unknown error',
-    });
+  } catch (error: any) {
+    console.error('[calendar API] Failed to load:', error.message || error);
     res.status(500).json({ error: 'Failed to load calendar data' });
   }
 }
