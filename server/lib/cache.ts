@@ -10,7 +10,8 @@ export type AvailableCacheIds =
   | 'github'
   | 'plextv'
   | 'plexwatchlist'
-  | 'tvdb';
+  | 'tvdb'
+  | 'calendar';
 
 const DEFAULT_TTL = 300;
 
@@ -249,6 +250,10 @@ class CacheManager {
     tvdb: new Cache('tvdb', 'The TVDB API', {
       stdTtl: 21600,
       max: TVDB_MAX_KEYS,
+    }),
+    calendar: new Cache('calendar', 'Calendar API', {
+      stdTtl: 600, // 10 minutes
+      max: 10,
     }),
   };
 

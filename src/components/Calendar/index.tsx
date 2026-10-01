@@ -15,6 +15,7 @@ export default function Calendar({
 
   const [calendarView, setCalendarView] = useState('dayGridWeek');
   const [events, setEvents] = useState<any[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [filter, setFilter] = useState<'all' | 'tv' | 'movie'>('all');
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -116,7 +117,13 @@ export default function Calendar({
       try {
         const res = await fetch('/api/calendar');
         const data = await res.json();
-        const enriched = data.map((e: any) => {
+        
+        const rawEvents = data.events || data;
+        if (data.lastUpdated) {
+          setLastUpdated(data.lastUpdated);
+        }
+
+        const enriched = rawEvents.map((e: any) => {
           const isMovie = e.type === 'movie' || (!e.type && !e.episodeCode);
           const calendarTitle = isMovie
             ? (e.year ? `${e.title} (${e.year})` : e.title) +
@@ -200,12 +207,20 @@ export default function Calendar({
             center: 'title',
             end: isDiscoverView
               ? 'customFilter'
-              : 'dayGridDay,dayGridWeek,dayGridMonth customFilter',
+              : 'lastUpdatedIndicator dayGridDay,dayGridWeek,dayGridMonth customFilter',
           }}
           buttonText={{
             today: 'Today',
           }}
           customButtons={{
+            lastUpdatedIndicator: {
+              text: lastUpdated 
+                ? `Last Updated: ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(lastUpdated))}` 
+                : 'Updating...',
+              click: () => {
+                // Visual indicator only
+              },
+            },
             customFilter: {
               text: '',
               click: () => {

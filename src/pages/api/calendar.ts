@@ -1,5 +1,7 @@
 import { getRadarrUpcoming } from '@app/lib/radarr';
 import { getSonarrUpcoming } from '@app/lib/sonarr';
+import cacheManager from '@server/lib/cache';
+import logger from '@server/logger';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 type Event = {
@@ -60,7 +62,7 @@ function groupTvEpisodes(episodes: Event[]): Event[] {
 
     // Collect unique qualities and languages from all episodes in the group
     const qualities = [
-      ...new Set(group.map((e: any) => e.quality).filter(Boolean)),
+      ...new Set(group.map((e: Event) => e.quality).filter(Boolean)),
     ];
     // Deduplicate individual languages across all episodes (each ep may have "English, Japanese, Spanish (Sub)")
     const langSet = new Set<string>();
@@ -92,7 +94,7 @@ function groupTvEpisodes(episodes: Event[]): Event[] {
       episodeCount: first.episodeCount || 0,
       episodeFileCount: first.episodeFileCount || 0,
       episodeCode,
-      episodes: group.map((e: any) => ({
+      episodes: group.map((e: Event) => ({
         episodeCode: e.episodeCode,
         episodeTitle: e.episodeTitle,
         status: e.status,
@@ -109,9 +111,20 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    console.log('[calendar API] Fetching Sonarr...');
+    const cache = cacheManager.getCache('calendar');
+    const cacheKey = 'calendar_events';
+    const cachedData = cache.data.get<Event[]>(cacheKey);
+
+    if (cachedData) {
+      logger.debug('[calendar API] Returning cached events');
+      const ttl = cache.data.getTtl(cacheKey);
+      const lastUpdated = ttl ? ttl - 600000 : Date.now();
+      return res.status(200).json({ lastUpdated, events: cachedData });
+    }
+
+    logger.debug('[calendar API] Fetching Sonarr...');
     const sonarrData = await getSonarrUpcoming();
-    console.log(`[calendar API] Sonarr returned ${sonarrData.length} events`);
+    logger.debug(`[calendar API] Sonarr returned ${sonarrData.length} events`);
 
     // ✅ Enrich with tmdbId from series if needed
     const enrichedSonarr = sonarrData.map((item) => ({
@@ -120,18 +133,22 @@ export default async function handler(
     }));
 
     const groupedTv = groupTvEpisodes(enrichedSonarr);
-    console.log(`[calendar API] Grouped to ${groupedTv.length} TV events`);
+    logger.debug(`[calendar API] Grouped to ${groupedTv.length} TV events`);
 
-    console.log('[calendar API] Fetching Radarr...');
+    logger.debug('[calendar API] Fetching Radarr...');
     const radarrData = await getRadarrUpcoming();
-    console.log(`[calendar API] Radarr returned ${radarrData.length} events`);
+    logger.debug(`[calendar API] Radarr returned ${radarrData.length} events`);
 
     const events = [...groupedTv, ...radarrData];
-    console.log(`[calendar API] Final events length: ${events.length}`);
+    logger.debug(`[calendar API] Final events length: ${events.length}`);
 
-    res.status(200).json(events);
-  } catch (error: any) {
-    console.error('[calendar API] Failed to load:', error.message || error);
+    cache.data.set(cacheKey, events);
+
+    res.status(200).json({ lastUpdated: Date.now(), events });
+  } catch (error: unknown) {
+    logger.error('[calendar API] Failed to load:', {
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+    });
     res.status(500).json({ error: 'Failed to load calendar data' });
   }
 }
