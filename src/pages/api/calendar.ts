@@ -111,11 +111,12 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
+    const refresh = req.query.refresh === 'true';
     const cache = cacheManager.getCache('calendar');
     const cacheKey = 'calendar_events';
     const cachedData = cache.data.get<Event[]>(cacheKey);
 
-    if (cachedData) {
+    if (cachedData && !refresh) {
       logger.debug('[calendar API] Returning cached events');
       const ttl = cache.data.getTtl(cacheKey);
       const lastUpdated = ttl ? ttl - 600000 : Date.now();

@@ -112,46 +112,48 @@ export default function Calendar({
     };
   }, [selectedEvent]);
 
-  useEffect(() => {
-    const loadEvents = async () => {
-      try {
-        const res = await fetch('/api/calendar');
-        const data = await res.json();
-        
-        const rawEvents = data.events || data;
-        if (data.lastUpdated) {
-          setLastUpdated(data.lastUpdated);
-        }
-
-        const enriched = rawEvents.map((e: any) => {
-          const isMovie = e.type === 'movie' || (!e.type && !e.episodeCode);
-          const calendarTitle = isMovie
-            ? (e.year ? `${e.title} (${e.year})` : e.title) +
-              (e.availabilityType ? ` [${e.availabilityType}]` : '')
-            : e.episodeCode
-              ? `${e.title} - ${e.episodeCode}`
-              : e.title;
-
-          const fanart =
-            e.images?.find((img: any) => img.coverType === 'fanart')
-              ?.remoteUrl || e.fanart;
-
-          return {
-            ...e,
-            calendarTitle,
-            displayTitle: e.year ? `${e.title} (${e.year})` : e.title,
-            type:
-              e.type ||
-              (e.title.includes('S') && e.title.includes('E') ? 'tv' : 'movie'),
-            tmdbId: e.tmdbId || e.series?.tmdbId || null,
-            fanart,
-          };
-        });
-        setEvents(enriched);
-      } catch (err) {
-        console.error('Failed to load events:', err);
+  const loadEvents = async (refresh = false) => {
+    try {
+      if (refresh) setLastUpdated(null);
+      const res = await fetch(`/api/calendar${refresh ? '?refresh=true' : ''}`);
+      const data = await res.json();
+      
+      const rawEvents = data.events || data;
+      if (data.lastUpdated) {
+        setLastUpdated(data.lastUpdated);
       }
-    };
+
+      const enriched = rawEvents.map((e: any) => {
+        const isMovie = e.type === 'movie' || (!e.type && !e.episodeCode);
+        const calendarTitle = isMovie
+          ? (e.year ? `${e.title} (${e.year})` : e.title) +
+            (e.availabilityType ? ` [${e.availabilityType}]` : '')
+          : e.episodeCode
+            ? `${e.title} - ${e.episodeCode}`
+            : e.title;
+
+        const fanart =
+          e.images?.find((img: any) => img.coverType === 'fanart')
+            ?.remoteUrl || e.fanart;
+
+        return {
+          ...e,
+          calendarTitle,
+          displayTitle: e.year ? `${e.title} (${e.year})` : e.title,
+          type:
+            e.type ||
+            (e.title.includes('S') && e.title.includes('E') ? 'tv' : 'movie'),
+          tmdbId: e.tmdbId || e.series?.tmdbId || null,
+          fanart,
+        };
+      });
+      setEvents(enriched);
+    } catch (err) {
+      console.error('Failed to load events:', err);
+    }
+  };
+
+  useEffect(() => {
     loadEvents();
   }, []);
 
@@ -215,10 +217,12 @@ export default function Calendar({
           customButtons={{
             lastUpdatedIndicator: {
               text: lastUpdated 
-                ? `Last Updated: ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(lastUpdated))}` 
+                ? `Last Updated: ${new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(new Date(lastUpdated))} ↻` 
                 : 'Updating...',
               click: () => {
-                // Visual indicator only
+                if (lastUpdated) {
+                  loadEvents(true);
+                }
               },
             },
             customFilter: {
